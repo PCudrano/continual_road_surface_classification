@@ -1,0 +1,22 @@
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - torchvision>=0.13.1
+  - jupyterlab
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - seaborn
+  - tqdm
+  - wandb
+  - pip
+  - pip:
+    - avalanche-lib==0.2.1
+    - opencv-python
+    - torchsummary
+    - nbconvert
+    - tornado
+
