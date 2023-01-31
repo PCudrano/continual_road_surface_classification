@@ -16,8 +16,8 @@ from torch.nn import CrossEntropyLoss
 from avalanche.benchmarks import dataset_benchmark
 from avalanche.logging import InteractiveLogger, WandBLogger
 from avalanche.training.plugins import EvaluationPlugin
-from avalanche.evaluation.metrics import (forgetting_metrics, accuracy_metrics, loss_metrics, MAC_metrics, confusion_matrix_metrics, amca_metrics,
-                                          bwt_metrics)
+from avalanche.evaluation.metrics import (forgetting_metrics, accuracy_metrics, class_accuracy_metrics, loss_metrics,
+                                          MAC_metrics, confusion_matrix_metrics, amca_metrics, bwt_metrics)
 from avalanche.training.supervised import Naive
 from avalanche.training import LFL
 from avalanche.training.plugins import EarlyStoppingPlugin
@@ -37,8 +37,9 @@ BASE = '.'
 LOOP = False  # False | int
 
 strategy_name = 'lfl' # 'naive' 'cumulative' 'joint'
-ds_order = [0,1,2]
+ds_order = [0, 1, 2]
 ds_names = ['rtk', 'kitti', 'carina']
+WANDB_ENABLED = False
 
 wandb_args = dict(
     project="cl_road_pavement",
@@ -56,7 +57,7 @@ hyperpar = dict(
     weight_decay=1e-8,  # 5e-4,
     learning_rate=0.005,
     lambda_e=0.75,
-    early_stopping='none',  #
+    early_stopping=None,  #
     epochs=20,  # 150
     batch_size=32,
     cuda=0,
@@ -74,7 +75,7 @@ CARINA_DATASET_PATH = os.path.join(BASE_DATASET_PATH, f'{hyperpar["dataset_ext"]
 WANDB_PATH = os.path.join(BASE, 'outputs/wandb')
 CKPT_PATH = os.path.join(BASE, 'outputs/ckpts')
 TB_PATH = os.path.join(BASE, 'outputs/tb_data')
-if not os.path.exists(WANDB_PATH):
+if not os.path.exists(WANDB_PATH) and WANDB_ENABLED:
     os.mkdir(WANDB_PATH)
 if not os.path.exists(CKPT_PATH):
     os.mkdir(CKPT_PATH)
@@ -91,8 +92,8 @@ CROPPED_H = 128#144
 CROPPED_W = 352
 NUM_CHANNELS = 3
 
-TRAIN_SPLIT = 0.6 if hyperpar['early_stopping'] and hyperpar['early_stopping'] != 'none' else 0.8
-VALID_SPLIT = 0.2 if hyperpar['early_stopping'] and hyperpar['early_stopping'] != 'none' else 0
+TRAIN_SPLIT = 0.6 if hyperpar['early_stopping'] else 0.8
+VALID_SPLIT = 0.2 if hyperpar['early_stopping'] else 0
 TEST_SPLIT = 1 - VALID_SPLIT - TRAIN_SPLIT
 
 rtk_cropping = [-1, 0, 0.17, 0] #0.0 # 0.17
@@ -158,21 +159,29 @@ summary(model, (NUM_CHANNELS, CROPPED_H, CROPPED_W))
 # Loggers
 
 interactive_logger = InteractiveLogger()
-wandb_logger = WandBLogger(
-    project_name=wandb_args['project'],
-    run_name=hyperpar['run'],
-    path=CKPT_PATH,  # checkpoints path
-    save_code=True, 
-    dir=WANDB_PATH,  # wandb data path
-    log_artifacts=True,
-    params=wandb_args,  # params passed to wandb.init
-    config=hyperpar  # hyperparameters
-)
+if WANDB_ENABLED:
+    wandb_logger = WandBLogger(
+        project_name=wandb_args['project'],
+        run_name=hyperpar['run'],
+        path=CKPT_PATH,  # checkpoints path
+        save_code=True,
+        dir=WANDB_PATH,  # wandb data path
+        log_artifacts=True,
+        params=wandb_args,  # params passed to wandb.init
+        config=hyperpar  # hyperparameters
+    )
 # tb_logger = TensorboardLogger(tb_log_dir=TB_PATH)
 
 # Evaluation plugin
 eval_plugin = EvaluationPlugin(
     accuracy_metrics(
+        minibatch=True,
+        epoch=True,
+        epoch_running=True,
+        experience=True,
+        stream=True,
+    ),
+    class_accuracy_metrics(
         minibatch=True,
         epoch=True,
         epoch_running=True,
@@ -191,7 +200,7 @@ eval_plugin = EvaluationPlugin(
     bwt_metrics(experience=True, stream=True),
     # forward_transfer_metrics(experience=True, stream=True),
     confusion_matrix_metrics(
-        stream=True, wandb=True, num_classes=NUM_CLASSES, class_names=list(LABELS.keys())  # [str(i) for i in range(10)]
+        stream=True, wandb=WANDB_ENABLED, num_classes=NUM_CLASSES, class_names=list(LABELS.keys())  # [str(i) for i in range(10)]
     ),
 #   cpu_usage_metrics(
 #       minibatch=True, epoch=True, experience=True, stream=True
@@ -214,9 +223,7 @@ eval_plugin = EvaluationPlugin(
 #        minibatch=True, epoch=True, experience=True, stream=True
 #    ),
     MAC_metrics(minibatch=True, epoch=True, experience=True),
-    # loggers=[interactive_logger, wandb_logger, tb_logger],
-    loggers=[wandb_logger],
-    # loggers=[interactive_logger],
+    loggers=[interactive_logger, wandb_logger] if WANDB_ENABLED else [interactive_logger],
     # collect_all=True
 )
 
@@ -231,8 +238,9 @@ if hyperpar['use_class_weights']:
     loss = CrossEntropyLoss(weight=class_weights)
 else:
     loss = CrossEntropyLoss()
-if hyperpar['early_stopping'] and hyperpar['early_stopping'] != 'none':
-    plugins = [EarlyStoppingPlugin(patience=2, peval_mode='epoch',
+if hyperpar['early_stopping']:
+    assert isinstance(hyperpar['early_stopping'], int), f"{self.__class__.__name__}: hparam early_stopping must be int."
+    plugins = [EarlyStoppingPlugin(patience=hyperpar['early_stopping'], peval_mode='epoch',
                                    val_stream_name='valid_stream', metric_name='Top1_Acc_Exp')]
 else:
     plugins = []
@@ -268,11 +276,15 @@ for i, experience in enumerate(scenario.train_stream):
     print("Start of experience: ", experience.current_experience)
     print("Current Classes: ", experience.classes_in_this_experience)
 
-    cl_strategy.train(experience, eval_streams=[scenario.valid_stream[i:(i+1)]])
+    if hyperpar['early_stopping']:
+        cl_strategy.train(experience, eval_streams=[scenario.valid_stream[i:(i+1)]])
+    else:
+        cl_strategy.train(experience)
     print("Training completed")
 
     print("Computing accuracy on the whole test set")
-    results.append(cl_strategy.eval(scenario.test_stream[:(i+1)]))
+    # results.append(cl_strategy.eval(scenario.test_stream[:(i+1)]))
+    results.append(cl_strategy.eval(scenario.test_stream))
 
 print(f"Test metrics:\n{results}")
 
@@ -282,5 +294,3 @@ print(f"Test metrics:\n{results}")
 # You can use this dictionary to manipulate the
 # metrics without avalanche.
 all_metrics = cl_strategy.evaluator.get_all_metrics()
-
-
