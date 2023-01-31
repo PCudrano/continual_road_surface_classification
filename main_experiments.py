@@ -41,7 +41,7 @@ def main(args):
     strategy_name = args.strategy_name
     ds_order = args.dsorder or [0,1,2]
     if args.perm:
-        ds_order = list(permutations(ds_order))[args.perm]
+        ds_order = list(permutations(ds_order))[args.perm] # [(0, 1, 2), (0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1), (2, 1, 0)]
     WANDB_ENABLED = args.wandb
     VERBOSE = args.verbose
     LOOP = args.loop
@@ -64,7 +64,7 @@ def main(args):
     )
     hyperpar = dict(
         run=f"cl_{strategy_name}",
-        strategy='lfl',
+        strategy=strategy_name,
         dataset_id=f"{ds_names[ds_order[0]]}_{ds_names[ds_order[1]]}_{ds_names[ds_order[2]]}",
         dataset_ext='enlarged',  # 'compact',  # TODO change
         architecture="rtk_model",  # "resnet18",
@@ -74,7 +74,7 @@ def main(args):
         learning_rate=0.005,
         lambda_e=0.75,
         early_stopping=None,  #
-        epochs=20,  # 150
+        epochs=10,  # 150
         batch_size=32,
         cuda=0,
         load_ds_on_device=False,
