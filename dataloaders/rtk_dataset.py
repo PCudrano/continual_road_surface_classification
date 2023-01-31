@@ -22,7 +22,7 @@ class RtkDataset(Dataset):
         self.default_augmentation = default_augmentation
         ext = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')
         for root, dirs, files in os.walk(self.img_dir):
-            print(root)
+            # print(root)
             xy = [(os.path.join(root, filename), os.path.basename(root)) for filename in files if filename.lower().endswith(ext)]
             if xy:
                 x, y = list(zip(*xy))

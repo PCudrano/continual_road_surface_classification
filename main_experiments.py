@@ -130,26 +130,26 @@ def main(args):
     rtk_train_dataloader, rtk_valid_dataloader, rtk_test_dataloader, rtk_train_ds, rtk_valid_ds, rtk_test_ds = load_dataloader_rtk_paper(
             RTK_DATASET_PATH, LABELS, rtk_cropping, [CROPPED_H, CROPPED_W],
             TRAIN_SPLIT, VALID_SPLIT, hyperpar['batch_size'], to_device=to_device, **kwargs)
-    print("Loaded RTK: ", rtk_train_dataloader.batch_size*len(rtk_train_dataloader), rtk_valid_dataloader.batch_size*len(rtk_valid_dataloader), rtk_test_dataloader.batch_size*len(rtk_test_dataloader))
+    # print("Loaded RTK: ", rtk_train_dataloader.batch_size*len(rtk_train_dataloader), rtk_valid_dataloader.batch_size*len(rtk_valid_dataloader), rtk_test_dataloader.batch_size*len(rtk_test_dataloader))
     kitti_train_dataloader, kitti_valid_dataloader, kitti_test_dataloader, kitti_train_ds, kitti_valid_ds, kitti_test_ds = load_dataloader_rtk_paper(
             KITTI_DATASET_PATH, LABELS, kitti_cropping, [CROPPED_H, CROPPED_W],
             TRAIN_SPLIT, VALID_SPLIT, hyperpar['batch_size'], to_device=to_device, **kwargs)
-    print("Loaded KITTI: ", kitti_train_dataloader.batch_size*len(kitti_train_dataloader), kitti_valid_dataloader.batch_size*len(kitti_valid_dataloader), kitti_test_dataloader.batch_size*len(kitti_test_dataloader))
+    # print("Loaded KITTI: ", kitti_train_dataloader.batch_size*len(kitti_train_dataloader), kitti_valid_dataloader.batch_size*len(kitti_valid_dataloader), kitti_test_dataloader.batch_size*len(kitti_test_dataloader))
     carina_train_dataloader, carina_valid_dataloader, carina_test_dataloader,     carina_train_ds, carina_valid_ds, carina_test_ds = load_dataloader_rtk_paper(
             CARINA_DATASET_PATH, LABELS, carina_cropping, [CROPPED_H, CROPPED_W],
             TRAIN_SPLIT, VALID_SPLIT, hyperpar['batch_size'], to_device=to_device, **kwargs)
-    print("Loaded CaRINA: ", carina_train_dataloader.batch_size*len(carina_train_dataloader), carina_valid_dataloader.batch_size*len(carina_valid_dataloader), carina_test_dataloader.batch_size*len(carina_test_dataloader))
+    # print("Loaded CaRINA: ", carina_train_dataloader.batch_size*len(carina_train_dataloader), carina_valid_dataloader.batch_size*len(carina_valid_dataloader), carina_test_dataloader.batch_size*len(carina_test_dataloader))
 
     # Class weights
     n_samples_per_class = torch.tensor(list(OrderedDict(sorted(dict(Counter(rtk_train_ds.targets)).items())).values()))
     class_weights = (torch.sum(n_samples_per_class) / n_samples_per_class).to(device)
-    print("Class samples: {}, Class weights: {}".format(n_samples_per_class, class_weights))
+    # print("Class samples: {}, Class weights: {}".format(n_samples_per_class, class_weights))
 
     train_ds_list = [rtk_train_ds, kitti_train_ds, carina_train_ds]
     valid_ds_list= [rtk_valid_ds, kitti_valid_ds, carina_valid_ds]
     test_ds_list = [rtk_test_ds, kitti_test_ds, carina_test_ds]
 
-    print("Dataset order: ", ds_order)
+    # print("Dataset order: ", ds_order)
 
     # Scenario
 
@@ -168,7 +168,7 @@ def main(args):
     elif hyperpar['architecture'] == 'resnet18':
         model = CustomResNet(torchvision.models.resnet18())
     model = model.to(device)
-    summary(model, (NUM_CHANNELS, CROPPED_H, CROPPED_W))
+    # summary(model, (NUM_CHANNELS, CROPPED_H, CROPPED_W))
 
     # Loggers
 
