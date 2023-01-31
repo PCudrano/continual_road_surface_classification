@@ -41,7 +41,7 @@ def main(args):
     strategy_name = args.strategy_name
     ds_order = args.dsorder or [0,1,2]
     if args.perm:
-        ds_order = permutations(ds_order)[args.perm]
+        ds_order = list(permutations(ds_order))[args.perm]
     WANDB_ENABLED = args.wandb
     VERBOSE = args.verbose
     LOOP = args.loop
@@ -124,7 +124,7 @@ def main(args):
 
     # Load Dataset
 
-    kwargs = {'num_workers': 0, 'pin_memory': True} if device.type == 'cuda' else {}
+    kwargs = {'num_workers': 8, 'pin_memory': True} if device.type == 'cuda' else {}
     to_device = device if device.type == 'cuda' and hyperpar['load_ds_on_device'] else None
 
     rtk_train_dataloader, rtk_valid_dataloader, rtk_test_dataloader, rtk_train_ds, rtk_valid_ds, rtk_test_ds = load_dataloader_rtk_paper(
@@ -336,9 +336,9 @@ if __name__ == '__main__':
         "--perm",
         help="Permutation number of datasets. 0=[0,1,2], ..., 5=[2,1,0]",
         choices=range(6),
+        type=int,
         required=False,
-        action="store",
-        default=None)
+        action="store")
     parser.add_argument(
         "-l",
         "--loop",
