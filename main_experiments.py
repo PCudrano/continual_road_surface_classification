@@ -20,7 +20,7 @@ from avalanche.logging import InteractiveLogger, WandBLogger
 from avalanche.training.plugins import EvaluationPlugin
 from avalanche.evaluation.metrics import (forgetting_metrics, accuracy_metrics, class_accuracy_metrics, loss_metrics,
                                           MAC_metrics, confusion_matrix_metrics, amca_metrics, bwt_metrics)
-from avalanche.training.supervised import Naive
+from avalanche.training.supervised import Naive, Cumulative, JointTraining
 from avalanche.training import LFL
 from avalanche.training.plugins import EarlyStoppingPlugin
 
@@ -268,8 +268,13 @@ def main(args):
         "device": device,
         "evaluator": eval_plugin
     }
+
     if hyperpar['strategy'] == 'naive':
         strategy_class = Naive
+    if hyperpar['strategy'] == 'cumulative':
+        strategy_class = Cumulative
+    if hyperpar['strategy'] == 'joint':
+        strategy_class = JointTraining
     elif hyperpar['strategy'] == 'lfl':
         strategy_class = LFL
         strategy_kwargs.update({
