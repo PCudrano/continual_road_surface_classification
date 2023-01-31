@@ -1,7 +1,7 @@
 # NVIDIA-Docker run options
 #docker_args: -v ~/datasets/shared/road_pavement:/data
 #docker_args: -v ~/datasets/shared/road_pavement:/home/cudrano/data -v ~/cl_road_pavement/outputs:/home/cudrano/outputs -p 8895:8888 -w / -e TMPDIR=/tmp -e WANDB_DIR=/tmp
-docker_args: -v ~/datasets/shared/road_pavement:/home/cudrano/data -v ~/cl_road_pavement/outputs:/home/cudrano/outputs -w / -e TMPDIR=/tmp -e WANDB_DIR=/tmp
+docker_args: -v ~/datasets/shared/road_pavement:/home/cudrano/data -v ~/storage/cl_road_pavement/outputs:/home/cudrano/outputs -e TMPDIR=/tmp -e WANDB_DIR=/tmp -w /exp
 
 # Run script options
 # To run the container multiple times
@@ -13,4 +13,5 @@ container_name: {user}_cl_road_pavement_GPU{args.gpu}_{date}
 # image_name pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime 
 #image_name: cudrano/continual:cuda11.1_pytorch-1.8.1_native_py38_avalanche0.2.1 
 image_name: cudrano/continual:cuda11.1_pytorch-1.8.1_avalanche0.2.1_conda_py38
+
 
