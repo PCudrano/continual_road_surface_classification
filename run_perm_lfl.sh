@@ -11,9 +11,11 @@ run () {
 	echo "Started exp perm $i"
 }
 
-for i in {1..5}; do
-	run lfl $i
-done
+#for i in {1..5}; do
+#	run lfl $i
+#done
+run lfl 0
+#run lfl 1
 
 for pid in $pids; do
 	wait $pid

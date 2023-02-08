@@ -71,13 +71,13 @@ def main(args):
         optimizer="SGD",  # "Adam",
         momentum=0.9,
         weight_decay=1e-8,  # 5e-4,
-        learning_rate=0.005,
-        lambda_e=0.75,
+        learning_rate=0.002, # 0.005,
+        lambda_e=1.0,#0.75,
         early_stopping=None,  #
-        epochs=10,  # 150
+        epochs=50,  # 150
         batch_size=32,
         cuda=0,
-        load_ds_on_device=False,
+        load_ds_on_device=True,
         use_class_weights=True  # False
     )
 
@@ -264,7 +264,7 @@ def main(args):
         "train_epochs": hyperpar['epochs'],
         # eval_mb_size=args['batch_size'],
         "eval_every": 1,  # eval every n $peval_mode
-        "peval_mode": 'epoch',  # 'epoch'|'iteration'
+        #"peval_mode": 'epoch',  # 'epoch'|'iteration'
         "device": device,
         "evaluator": eval_plugin
     }
@@ -291,19 +291,35 @@ def main(args):
     print("Starting experiment...")
 
     results = []
-    for i, experience in enumerate(scenario.train_stream):
-        print("Start of experience: ", experience.current_experience)
-        print("Current Classes: ", experience.classes_in_this_experience)
+    if hyperpar['strategy'] == 'joint':
+        print("Start of JOINT experience")
+        #print("Current Classes: ", scenario.classes_in_this_experience)
 
         if hyperpar['early_stopping']:
-            cl_strategy.train(experience, eval_streams=[scenario.valid_stream[i:(i+1)]])
+            cl_strategy.train(scenario.train_stream, eval_streams=[scenario.valid_stream])
         else:
-            cl_strategy.train(experience)
+            # cl_strategy.train(experience)
+            cl_strategy.train(scenario.train_stream, eval_streams=[scenario.test_stream])
         print("Training completed")
 
         print("Computing accuracy on the whole test set")
         # results.append(cl_strategy.eval(scenario.test_stream[:(i+1)]))
         results.append(cl_strategy.eval(scenario.test_stream))
+    else:
+        for i, experience in enumerate(scenario.train_stream):
+            print("Start of experience: ", experience.current_experience)
+            print("Current Classes: ", experience.classes_in_this_experience)
+
+            if hyperpar['early_stopping']:
+                cl_strategy.train(experience, eval_streams=[scenario.valid_stream[i:(i+1)]])
+            else:
+                # cl_strategy.train(experience)
+                cl_strategy.train(experience, eval_streams=[scenario.test_stream[:(i+1)]])
+            print("Training completed")
+
+            print("Computing accuracy on the whole test set")
+            # results.append(cl_strategy.eval(scenario.test_stream[:(i+1)]))
+            results.append(cl_strategy.eval(scenario.test_stream))
 
     print(f"Test metrics:\n{results}")
 
