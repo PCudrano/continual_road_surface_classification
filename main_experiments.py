@@ -27,7 +27,10 @@ from avalanche.training.plugins import EarlyStoppingPlugin
 from dataloaders.load_dataloaders import load_dataloader_rtk_paper
 from models.rtk_cnn import RtkModel
 from models.custom_resnet import CustomResNet
-
+from torchmetrics_metrics import *
+from sklearn_metrics import *
+import torchmetrics
+import sklearn.metrics as skmetrics
 
 # Configs
 
@@ -74,7 +77,7 @@ def main(args):
         learning_rate=0.002, # 0.005,
         lambda_e=1.0,#0.75,
         early_stopping=None,  #
-        epochs=50,  # 150
+        epochs=30,  # 150
         batch_size=32,
         cuda=0,
         load_ds_on_device=True,
@@ -172,7 +175,10 @@ def main(args):
 
     # Loggers
 
-    interactive_logger = InteractiveLogger()
+    loggers = []
+    if VERBOSE:
+        interactive_logger = InteractiveLogger()
+        loggers.append(interactive_logger)
     if WANDB_ENABLED:
         wandb_logger = WandBLogger(
             project_name=wandb_args['project'],
@@ -184,7 +190,7 @@ def main(args):
             params=wandb_args,  # params passed to wandb.init
             config=hyperpar  # hyperparameters
         )
-    # tb_logger = TensorboardLogger(tb_log_dir=TB_PATH)
+        loggers.append(wandb_logger)
 
     # Evaluation plugin
     eval_plugin = EvaluationPlugin(
@@ -237,7 +243,63 @@ def main(args):
     #        minibatch=True, epoch=True, experience=True, stream=True
     #    ),
         MAC_metrics(minibatch=True, epoch=True, experience=True),
-        loggers=[interactive_logger, wandb_logger] if WANDB_ENABLED else [interactive_logger] if VERBOSE else [],
+        torchmetrics_metrics(torchmetrics.F1Score, task="multiclass", num_classes=NUM_CLASSES, threshold=0.5,
+                             minibatch=True,
+                             epoch=True,
+                             epoch_running=True,
+                             experience=True,
+                             stream=True
+                             ),
+        torchmetrics_metrics(torchmetrics.AUROC, task="multiclass", num_classes=NUM_CLASSES, thresholds=200,
+                             minibatch=True,
+                             epoch=True,
+                             epoch_running=True,
+                             experience=True,
+                             stream=True
+                             ),
+        torchmetrics_metrics(torchmetrics.Precision, task="multiclass", num_classes=NUM_CLASSES, threshold=0.5,
+                             minibatch=True,
+                             epoch=True,
+                             epoch_running=True,
+                             experience=True,
+                             stream=True
+                             ),
+        torchmetrics_metrics(torchmetrics.Recall, task="multiclass", num_classes=NUM_CLASSES, threshold=0.5,
+                             minibatch=True,
+                             epoch=True,
+                             epoch_running=True,
+                             experience=True,
+                             stream=True
+                             ),
+        sklearn_metrics(skmetrics.f1_score, use_logits=False, running_average=False,
+                        minibatch=True,
+                        epoch=True,
+                        epoch_running=True,
+                        experience=True,
+                        stream=True
+                        ),
+        sklearn_metrics(skmetrics.precision_score, use_logits=False, running_average=False,
+                        minibatch=True,
+                        epoch=True,
+                        epoch_running=True,
+                        experience=True,
+                        stream=True
+                        ),
+        sklearn_metrics(skmetrics.recall_score, use_logits=False, running_average=False,
+                        minibatch=True,
+                        epoch=True,
+                        epoch_running=True,
+                        experience=True,
+                        stream=True
+                        ),
+        sklearn_metrics(skmetrics.accuracy_score, use_logits=False, running_average=False,
+                        minibatch=True,
+                        epoch=True,
+                        epoch_running=True,
+                        experience=True,
+                        stream=True
+                        ),
+        loggers=loggers
         # collect_all=True
     )
 
