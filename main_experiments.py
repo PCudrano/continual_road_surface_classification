@@ -21,7 +21,7 @@ from avalanche.training.plugins import EvaluationPlugin
 from avalanche.evaluation.metrics import (forgetting_metrics, accuracy_metrics, class_accuracy_metrics, loss_metrics,
                                           MAC_metrics, confusion_matrix_metrics, amca_metrics, bwt_metrics)
 from avalanche.training.supervised import Naive, Cumulative, JointTraining
-from avalanche.training import LFL
+from avalanche.training import LFL, LwF
 from avalanche.training.plugins import EarlyStoppingPlugin
 
 from dataloaders.load_dataloaders import load_dataloader_rtk_paper
@@ -76,6 +76,8 @@ def main(args):
         weight_decay=1e-8,  # 5e-4,
         learning_rate=0.002, # 0.005,
         lambda_e=1.0,#0.75,
+        alpha=1,
+        temperature=2,
         early_stopping=None,  #
         epochs=30,  # 150
         batch_size=32,
@@ -342,6 +344,12 @@ def main(args):
         strategy_kwargs.update({
             'lambda_e': hyperpar['lambda_e']
         })
+    elif hyperpar['strategy'] == 'lwf':
+        strategy_class = LwF
+        strategy_kwargs.update({
+            'alpha': hyperpar['alpha'],
+            'temperature': hyperpar['temperature']
+        })
     cl_strategy = strategy_class(
         model=model,
         optimizer=optimizer,
@@ -408,8 +416,8 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "strategy_name",
-        help="Strategy name: 'lfl' | 'naive' | 'cumulative' | 'joint'",
-        choices=['lfl', 'naive', 'cumulative', 'joint'],
+        help="Strategy name: 'lfl' | 'lwf' | 'naive' | 'cumulative' | 'joint'",
+        choices=['lfl', 'lwf', 'naive', 'cumulative', 'joint'],
         metavar="strategy_name")
     parser.add_argument(
         "--dsorder",
