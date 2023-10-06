@@ -5,6 +5,15 @@ import torchvision.transforms as transforms
 from dataloaders.rtk_transform import RtkImageTransform
 from dataloaders.rtk_dataset import RtkDataset
 
+### Reproducibility and determinism
+def seed_worker(worker_id):
+    worker_seed = torch.initial_seed() % 2**32
+    numpy.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+g = torch.Generator()
+g.manual_seed(0)
+###
 
 def load_dataloader_rtk_paper(dataset_path, labels_dict, cropping_percentage, cropped_size, train_split, valid_split, batch_size, to_device=None, **kwargs):
     # define crop transform
@@ -22,8 +31,8 @@ def load_dataloader_rtk_paper(dataset_path, labels_dict, cropping_percentage, cr
     # apply augmentation to train set
     train_ds = RtkDataset.fromSubset(_train_ds, default_augmentation=True, to_device=to_device)
     # create dataloaders
-    train_dataloader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, **kwargs)  # , collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
-    valid_dataloader = DataLoader(valid_ds, batch_size=batch_size, shuffle=False, **kwargs)  # , collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
-    test_dataloader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, **kwargs)  # ,collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
+    train_dataloader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, worker_init_fn=seed_worker, generator=g, **kwargs)  # , collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
+    valid_dataloader = DataLoader(valid_ds, batch_size=batch_size, shuffle=False, worker_init_fn=seed_worker, generator=g, **kwargs)  # , collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
+    test_dataloader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, worker_init_fn=seed_worker, generator=g, **kwargs)  # ,collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
 
     return train_dataloader, valid_dataloader, test_dataloader, train_ds, valid_ds, test_ds

@@ -6,6 +6,7 @@
 import os
 import sys, argparse, logging
 import numpy as np
+import random
 from collections import Counter, OrderedDict
 from itertools import permutations
 import torch
@@ -34,7 +35,14 @@ import sklearn.metrics as skmetrics
 
 # Configs
 
-torch.manual_seed(42)
+# Reproducibility and same data across strategy: set all seeds and deterministic behavior
+random.seed(1234)
+np.random.seed(1234)
+torch.manual_seed(1234)
+os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+torch.backends.cudnn.benchmark = False
+torch.use_deterministic_algorithms(True)
+
 # BASE = '/home/cudrano'
 BASE = '.'
 
@@ -76,7 +84,7 @@ def main(args):
         weight_decay=1e-8,  # 5e-4,
         learning_rate=0.002, # 0.005,
         lambda_e=1.0,#0.75,
-        alpha=1,
+        alpha=2,
         temperature=2,
         early_stopping=None,  #
         epochs=30,  # 150
