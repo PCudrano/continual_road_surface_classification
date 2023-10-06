@@ -139,8 +139,10 @@ dmypy.json
 .DS_Store
 
 # Data
-data
-outputs
+data/**
+!data/.gitkeep
+outputs/**
+!outputs/.gitkeep
 
 # Neptune
 .neptune
